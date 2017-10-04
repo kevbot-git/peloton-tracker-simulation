@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 4866428780706416}
   - component: {fileID: 33825388221545308}
   - component: {fileID: 23469318644578550}
-  - component: {fileID: 114150965914483596}
+  - component: {fileID: 114406004204227598}
   m_Layer: 0
   m_Name: MasterDevice
   m_TagString: Untagged
@@ -81,7 +81,7 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1466223989696032}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &114150965914483596
+--- !u!114 &114406004204227598
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -93,3 +93,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   This: {fileID: 1466223989696032}
+  ConnectionRange: 2
