@@ -1,15 +1,53 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BluetoothDevice {
+public abstract class BluetoothDevice: MonoBehaviour
+{
+    public GameObject This;
+    public float ConnectionRange = 5.0f;
 
     private SphereCollider connectionCollider;
+    private LineRenderer lineRenderer;
 
-    public BluetoothDevice(GameObject gameObject, float connectionRange)
+    private static List<GameObject> paired;
+
+    public virtual void Start()
     {
+        paired = new List<GameObject>();
+
         connectionCollider = gameObject.AddComponent<SphereCollider>();
         connectionCollider.center = Vector3.zero;
-        connectionCollider.radius = connectionRange;
+        connectionCollider.radius = ConnectionRange;
+        connectionCollider.isTrigger = true;
+
+        lineRenderer = gameObject.AddComponent<LineRenderer>();
+        lineRenderer.startWidth = 0.025f;
+        lineRenderer.positionCount = 2;
+        lineRenderer.startColor = lineRenderer.endColor = Color.green;
+    }
+
+    public void Update()
+    {
+        lineRenderer.positionCount = paired.Count;
+        foreach(GameObject o in paired)
+        {
+            lineRenderer.SetPosition(0, This.transform.position);
+            lineRenderer.SetPosition(1, o.transform.position);
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("Adding " + other.name);
+        paired.Add(other.gameObject);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        Debug.Log("Removing " + other.name);
+        paired.Remove(other.gameObject);
+        Debug.Log(paired.Count);
     }
 }

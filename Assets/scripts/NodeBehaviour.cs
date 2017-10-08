@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NodeBehaviour : MonoBehaviour {
+public class NodeBehaviour : BluetoothDevice
+{
+    public void OnEnable()
+    {
+        Debug.Log(This.name + " started");
+        StartCoroutine(Example());
+    }
 
-	public GameObject This;
-
-	// Use this for initialization
-	void Start () {
-		Debug.Log (This.name + " started");
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    IEnumerator Example()
+    {
+        Debug.Log(Time.time);
+        yield return new WaitForSeconds(5);
+        Debug.Log(Time.time);
+    }
 }
