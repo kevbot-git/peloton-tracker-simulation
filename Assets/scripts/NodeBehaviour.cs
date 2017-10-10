@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class NodeBehaviour : BluetoothDevice
 {
-    public void OnEnable()
+    public override void Start()
     {
-        Debug.Log(This.name + " started");
+        base.Start();
         StartCoroutine(Example());
     }
 

@@ -14,7 +14,7 @@ public class ControlBehaviour : MonoBehaviour
             for (int x = 0; x <= 2; x++)
             {
                 GameObject o = Instantiate(MasterDevicePrefab, new Vector3((x - 1) * 4, 0, (z - 1) * 4), Quaternion.identity);
-                o.name = "Device " + (z * 3 + x);
+                o.name = "Device " + (z * 3 + x + 1);
             }
         }
 	}

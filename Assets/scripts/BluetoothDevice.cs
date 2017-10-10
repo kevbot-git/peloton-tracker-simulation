@@ -12,6 +12,7 @@ public abstract class BluetoothDevice: MonoBehaviour
     private LineRenderer lineRenderer;
 
     private static List<GameObject> paired;
+    private static readonly string BLUETOOTH_DEVICE = "BluetoothDevice";
 
     public virtual void Start()
     {
@@ -40,14 +41,25 @@ public abstract class BluetoothDevice: MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Adding " + other.name);
-        paired.Add(other.gameObject);
+        if(other.tag == BLUETOOTH_DEVICE)
+        {
+            Log("Adding " + other.name);
+            paired.Add(other.gameObject);
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        Debug.Log("Removing " + other.name);
-        paired.Remove(other.gameObject);
-        Debug.Log(paired.Count);
+        if (other.tag == BLUETOOTH_DEVICE)
+        {
+            Log("Removing " + other.name);
+            paired.Remove(other.gameObject);
+            Log(paired.Count);
+        }
+    }
+
+    private void Log(object message)
+    {
+        Debug.Log("[" + This.name + "] " + message);
     }
 }
