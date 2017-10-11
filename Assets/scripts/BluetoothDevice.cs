@@ -5,42 +5,34 @@ using UnityEngine;
 
 public abstract class BluetoothDevice: MonoBehaviour
 {
-    public GameObject This;
+    public GameObject DeviceGameObject;
     public float ConnectionRange = 5.0f;
 
     private SphereCollider connectionCollider;
-    private LineRenderer lineRenderer;
 
-    private static List<GameObject> paired;
+    private static BluetoothConnectionSet paired;
     private static readonly string BLUETOOTH_DEVICE = "BluetoothDevice";
 
     public virtual void Start()
     {
-        paired = new List<GameObject>();
+        paired = new BluetoothConnectionSet(7); // Set max connections to 7, as is the case with Bluetooth 5.0 mesh specification
 
         connectionCollider = gameObject.AddComponent<SphereCollider>();
         connectionCollider.center = Vector3.zero;
         connectionCollider.radius = ConnectionRange;
         connectionCollider.isTrigger = true;
 
-        lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.startWidth = 0.025f;
-        lineRenderer.positionCount = 2;
-        lineRenderer.startColor = lineRenderer.endColor = Color.green;
     }
 
-    public void Update()
+    public virtual void Update()
     {
-        lineRenderer.positionCount = paired.Count;
-        foreach(GameObject o in paired)
-        {
-            lineRenderer.SetPosition(0, This.transform.position);
-            lineRenderer.SetPosition(1, o.transform.position);
-        }
+        //
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        BluetoothDevice otherDevice = other.gameObject.GetComponent<BluetoothDevice>();
+        if (otherDevice)
         if(other.tag == BLUETOOTH_DEVICE)
         {
             Log("Adding " + other.name);
@@ -58,8 +50,72 @@ public abstract class BluetoothDevice: MonoBehaviour
         }
     }
 
+    public IEnumerator BlinkTask(Color colour, float delay = 1f)
+    {
+        while(true)
+        {
+            Color startColour = DeviceGameObject.GetComponent<Renderer>().material.color;
+            yield return new WaitForSeconds(delay);
+            DeviceGameObject.GetComponent<Renderer>().material.color = colour;
+            yield return new WaitForSeconds(delay);
+            DeviceGameObject.GetComponent<Renderer>().material.color = startColour;
+        }
+    }
+
+    public BluetoothConnectionSet GetConnections(GameObject exclude = null)
+    {
+        if (exclude == null)
+        {
+            return paired;
+        }
+        else
+        {
+            BluetoothConnectionSet s = paired;
+            s.Remove(exclude);
+            return s;
+        }
+    }
+
     private void Log(object message)
     {
-        Debug.Log("[" + This.name + "] " + message);
+        Debug.Log("[" + DeviceGameObject.name + "] " + message);
+    }
+}
+
+public class BluetoothConnectionSet
+{
+    private HashSet<GameObject> set;
+    private int maxConnections;
+
+    public BluetoothConnectionSet(int maxConnections = 7)
+    {
+        this.maxConnections = maxConnections;
+        set = new HashSet<GameObject>();
+    }
+
+    public bool Add(GameObject gameObject)
+    {
+        if(set.Count < maxConnections)
+        {
+            var r = set.Add(gameObject);
+            Debug.Log("set: " + set.Count + " max: " + maxConnections + " out: " + r);
+            return r;
+        }
+        return false;
+    }
+
+    public bool Remove(GameObject gameObject)
+    {
+        return set.Remove(gameObject);
+    }
+
+    public IEnumerator<GameObject> GetEnumerator()
+    {
+        return set.GetEnumerator();
+    }
+
+    public int Count
+    {
+        get { return set.Count; }
     }
 }

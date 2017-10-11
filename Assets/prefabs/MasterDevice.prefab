@@ -108,5 +108,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e4ccb66ab3a4f343b38a5482771b1a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  This: {fileID: 1466223989696032}
+  DeviceGameObject: {fileID: 1466223989696032}
   ConnectionRange: 5

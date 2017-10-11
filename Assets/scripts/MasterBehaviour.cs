@@ -7,5 +7,6 @@ public class MasterBehaviour : BluetoothDevice
     public override void Start()
     {
         base.Start();
+        StartCoroutine(BlinkTask(Color.red));
     }
 }

@@ -306,3 +306,6 @@ MonoBehaviour:
     type: 2}
   NodeDevicePrefab: {fileID: 1456236646396148, guid: cd6c8de508f4d8a4c8392b934a1c0dd6,
     type: 2}
+  numberOfMasterDevices: 3
+  numberOfNodeDevices: 20
+  gridSpacing: 5
