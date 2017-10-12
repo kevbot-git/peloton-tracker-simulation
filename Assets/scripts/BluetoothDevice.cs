@@ -8,6 +8,7 @@ public abstract class BluetoothDevice: MonoBehaviour
     public static readonly int MAX_CONNECTIONS = 7; // Set max connections to 7, as is the case with Bluetooth 5.0 mesh specification
 
     public float ConnectionRange = 5.0f;
+    public float SpeedOfLight = 500f; // This affects how quickly devices communicate
 
     private SphereCollider connectionCollider;
 
@@ -33,30 +34,42 @@ public abstract class BluetoothDevice: MonoBehaviour
 
     public virtual void Update()
     {
-        //
+        if (Input.GetMouseButton(0))
+        {
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hit, 100f))
+            {
+                // Check if the mouse is dragging this object
+                if (hit.transform.gameObject == gameObject)
+                {
+                    Vector3 screenPoint = Input.mousePosition;
+
+                    Vector3 newPos = ray.GetPoint(Camera.main.transform.position.y);
+                    newPos.y = 0;
+
+                    // Make this object follow the mouse
+                    transform.position = newPos;
+                }
+            }
+        }
     }
 
     private static void SelectDevice(GameObject device)
     {
         selectedDevice = device;
-        Debug.Log("Selected " + device.name);
     }
 
     private void OnMouseDown()
     {
         SelectDevice(gameObject);
-    }
-
-    private void OnMouseDrag()
-    {
-        Vector3 screenPoint = Input.mousePosition;
-
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-        Vector3 newPos = ray.GetPoint(Camera.main.transform.position.y);
-        newPos.y = 0;
-
-        transform.position = newPos;
+        if (paired.Count > 0)
+        {
+            foreach (GameObject o in paired)
+            {
+                Ping(o);
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -75,6 +88,21 @@ public abstract class BluetoothDevice: MonoBehaviour
         {
             paired.Remove(other.gameObject);
         }
+    }
+
+    public virtual void OnPinged(GameObject from) {
+        Log(from.name + " pinged me!");
+    }
+
+    public void Ping(GameObject target) {
+        StartCoroutine(PingTask(target));
+    }
+
+    private IEnumerator PingTask(GameObject target) {
+        Log("Pinging " + target.name + "...");
+        // Delay by taking into account the displacement between the two devices
+        yield return new WaitForSeconds(1f / SpeedOfLight * 1f);//Vector3.Displacement(target.transform.position - gameObject.transform.position));
+        target.GetComponent<BluetoothDevice>().OnPinged(gameObject);
     }
 
     public IEnumerator BlinkTask(Color colour, float delay = 1f)
@@ -135,7 +163,6 @@ public class BluetoothConnectionSet
         if(set.Count < maxConnections)
         {
             var r = set.Add(gameObject);
-            Debug.Log("set: " + set.Count + " max: " + maxConnections + " out: " + r);
             return r;
         }
         return false;
