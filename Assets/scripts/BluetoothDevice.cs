@@ -5,28 +5,58 @@ using UnityEngine;
 
 public abstract class BluetoothDevice: MonoBehaviour
 {
-    public GameObject DeviceGameObject;
+    public static readonly int MAX_CONNECTIONS = 7; // Set max connections to 7, as is the case with Bluetooth 5.0 mesh specification
+
     public float ConnectionRange = 5.0f;
 
     private SphereCollider connectionCollider;
 
-    private static BluetoothConnectionSet paired;
+    private BluetoothConnectionSet paired;
+    private static GameObject selectedDevice = null;
     private static readonly string BLUETOOTH_DEVICE = "BluetoothDevice";
+
+    private LineRenderer line;
 
     public virtual void Start()
     {
-        paired = new BluetoothConnectionSet(7); // Set max connections to 7, as is the case with Bluetooth 5.0 mesh specification
+        line = gameObject.AddComponent<LineRenderer>();
+        line.startWidth = line.endWidth = .1f;
+        line.positionCount = 0;
+
+        paired = new BluetoothConnectionSet(MAX_CONNECTIONS);
 
         connectionCollider = gameObject.AddComponent<SphereCollider>();
         connectionCollider.center = Vector3.zero;
         connectionCollider.radius = ConnectionRange;
         connectionCollider.isTrigger = true;
-
     }
 
     public virtual void Update()
     {
         //
+    }
+
+    private static void SelectDevice(GameObject device)
+    {
+        selectedDevice = device;
+        Debug.Log("Selected " + device.name);
+    }
+
+    private void OnMouseDown()
+    {
+        SelectDevice(gameObject);
+    }
+
+    private void OnMouseDrag()
+    {
+        Vector3 screenPoint = Input.mousePosition;
+
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+        Vector3 newPos = ray.GetPoint(Camera.main.transform.position.y);
+        newPos.y = 0;
+
+        transform.position = newPos;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -35,7 +65,6 @@ public abstract class BluetoothDevice: MonoBehaviour
         if (otherDevice)
         if(other.tag == BLUETOOTH_DEVICE)
         {
-            Log("Adding " + other.name);
             paired.Add(other.gameObject);
         }
     }
@@ -44,9 +73,7 @@ public abstract class BluetoothDevice: MonoBehaviour
     {
         if (other.tag == BLUETOOTH_DEVICE)
         {
-            Log("Removing " + other.name);
             paired.Remove(other.gameObject);
-            Log(paired.Count);
         }
     }
 
@@ -54,11 +81,11 @@ public abstract class BluetoothDevice: MonoBehaviour
     {
         while(true)
         {
-            Color startColour = DeviceGameObject.GetComponent<Renderer>().material.color;
+            Color startColour = gameObject.GetComponent<Renderer>().material.color;
             yield return new WaitForSeconds(delay);
-            DeviceGameObject.GetComponent<Renderer>().material.color = colour;
+            gameObject.GetComponent<Renderer>().material.color = colour;
             yield return new WaitForSeconds(delay);
-            DeviceGameObject.GetComponent<Renderer>().material.color = startColour;
+            gameObject.GetComponent<Renderer>().material.color = startColour;
         }
     }
 
@@ -78,7 +105,17 @@ public abstract class BluetoothDevice: MonoBehaviour
 
     private void Log(object message)
     {
-        Debug.Log("[" + DeviceGameObject.name + "] " + message);
+        Debug.Log("[" + gameObject.name + "] " + message);
+    }
+
+    public static GameObject GetSelectedDevice()
+    {
+        return selectedDevice;
+    }
+
+    public LineRenderer GetLineRenderer()
+    {
+        return line;
     }
 }
 
@@ -112,6 +149,16 @@ public class BluetoothConnectionSet
     public IEnumerator<GameObject> GetEnumerator()
     {
         return set.GetEnumerator();
+    }
+
+    public List<GameObject> AsList()
+    {
+        List<GameObject> list = new List<GameObject>();
+        foreach (GameObject g in set)
+        {
+            list.Add(g);
+        }
+        return list;
     }
 
     public int Count
