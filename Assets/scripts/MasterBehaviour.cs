@@ -4,8 +4,9 @@ using UnityEngine;
 
 public class MasterBehaviour : BluetoothDevice
 {
-    public void OnEnable()
+    public override void Start()
     {
-        Debug.Log(This.name + " started");
+        base.Start();
+        StartCoroutine(BlinkTask(Color.red));
     }
 }

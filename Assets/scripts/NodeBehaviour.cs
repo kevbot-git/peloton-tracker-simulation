@@ -4,16 +4,9 @@ using UnityEngine;
 
 public class NodeBehaviour : BluetoothDevice
 {
-    public void OnEnable()
+    public override void Start()
     {
-        Debug.Log(This.name + " started");
-        StartCoroutine(Example());
-    }
-
-    IEnumerator Example()
-    {
-        Debug.Log(Time.time);
-        yield return new WaitForSeconds(5);
-        Debug.Log(Time.time);
+        base.Start();
+        StartCoroutine(BlinkTask(Color.green));
     }
 }

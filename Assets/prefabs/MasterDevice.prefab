@@ -25,7 +25,7 @@ GameObject:
   - component: {fileID: 54980727362251790}
   m_Layer: 0
   m_Name: MasterDevice
-  m_TagString: Untagged
+  m_TagString: BluetoothDevice
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -108,5 +108,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e4ccb66ab3a4f343b38a5482771b1a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  This: {fileID: 1466223989696032}
+  DeviceGameObject: {fileID: 1466223989696032}
   ConnectionRange: 5
