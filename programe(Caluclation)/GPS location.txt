@@ -1,0 +1,39 @@
+#include "google-maps-device-locator.h"
+#include "Particle.h"
+
+GoogleMapsDeviceLocator locator;
+
+void setup() {
+  Serial.begin(9600);
+  // Scan for visible networks and publish to the cloud every 30 seconds
+  // Pass the returned location to be handled by the locationCallback() method
+  locator.withSubscribe(locationCallback).withLocatePeriodic(30);
+  
+}
+
+void locationCallback(float lat, float lon, float accuracy) {
+    Serial.printlnf("lat=%f lon=%f accuracy=%f", lat, lon, accuracy);
+    //get location point lat, lon ,accuracy
+    
+    char buf[16];
+    
+	snprintf(buf, sizeof(buf), "%.6f", lat);
+    //add output code these lane
+    snprintf(buf, sizeof(buf), "%.6f", lon);
+     //add output code these lane
+     
+     snprintf(buf, sizeof(buf), "%.1f", accuracy);
+     //add output code these lane
+     
+  // Handle the returned location data for the device. This method is passed three arguments:
+  // - Latitude
+  // - Longitude
+  // - Accuracy of estimated location (in meters)
+}
+
+void loop() {
+  locator.loop();
+}
+            
+
+}
