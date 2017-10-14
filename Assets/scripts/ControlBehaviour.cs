@@ -55,7 +55,7 @@ public class ControlBehaviour : MonoBehaviour
 
     private void Update()
     {
-        GameObject selected = BluetoothDevice.GetSelectedDevice();
+        BluetoothDevice selected = BluetoothDevice.GetSelectedDevice();
 
         foreach (GameObject g in devices)
         {
@@ -65,8 +65,7 @@ public class ControlBehaviour : MonoBehaviour
 
         if (selected)
         {
-            List<GameObject> connections = selected.GetComponent<BluetoothDevice>().GetConnections().AsList();
-            foreach (GameObject o in connections)
+            foreach (GameObject o in selected.GetConnections().DeviceGameObjects)
             {
                 LineRenderer line = o.GetComponent<LineRenderer>();
                 line.positionCount = 2;
@@ -78,10 +77,10 @@ public class ControlBehaviour : MonoBehaviour
     private void OnGUI()
     {
         string title = "";
-        GameObject selected = BluetoothDevice.GetSelectedDevice();
+        BluetoothDevice selected = BluetoothDevice.GetSelectedDevice();
 
         if (selected)
-            title = selected.name;
+            title = selected.DeviceGameObject.name;
 
         GUILayout.BeginArea(new Rect(GUI_MARGIN, GUI_MARGIN, Screen.width / 3, Screen.height), title);
 
@@ -91,11 +90,11 @@ public class ControlBehaviour : MonoBehaviour
             // Create blank label to correct strange spacing
             GUILayout.Label("");
 
-            BluetoothConnectionSet selectedConnections = BluetoothDevice.GetSelectedDevice().GetComponent<BluetoothDevice>().GetConnections();
+            BluetoothConnectionSet selectedConnections = BluetoothDevice.GetSelectedDevice().GetConnections();
 
-            foreach (GameObject connected in selectedConnections)
+            foreach (BluetoothDevice connected in selectedConnections)
             {
-                GUILayout.Label(connected.name);
+                GUILayout.Label(connected.DeviceGameObject.name);
             }
         }
 

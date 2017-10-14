@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public abstract class BluetoothDevice: MonoBehaviour
 {
@@ -13,7 +14,7 @@ public abstract class BluetoothDevice: MonoBehaviour
     private SphereCollider connectionCollider;
 
     private BluetoothConnectionSet paired;
-    private static GameObject selectedDevice = null;
+    private static BluetoothDevice selectedDevice = null;
     private static readonly string BLUETOOTH_DEVICE = "BluetoothDevice";
 
     private LineRenderer line;
@@ -55,30 +56,29 @@ public abstract class BluetoothDevice: MonoBehaviour
         }
     }
 
-    private static void SelectDevice(GameObject device)
+    private static void SelectDevice(BluetoothDevice device)
     {
         selectedDevice = device;
     }
 
     private void OnMouseDown()
     {
-        SelectDevice(gameObject);
+        SelectDevice(this);
         if (paired.Count > 0)
         {
-            foreach (GameObject o in paired)
+            foreach (BluetoothDevice d in paired)
             {
-                Ping(o);
+                Ping(d);
             }
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        BluetoothDevice otherDevice = other.gameObject.GetComponent<BluetoothDevice>();
-        if (otherDevice)
         if(other.tag == BLUETOOTH_DEVICE)
         {
-            paired.Add(other.gameObject);
+            BluetoothDevice otherDevice = other.gameObject.GetComponent<BluetoothDevice>();
+            OnConnect(otherDevice);
         }
     }
 
@@ -86,23 +86,35 @@ public abstract class BluetoothDevice: MonoBehaviour
     {
         if (other.tag == BLUETOOTH_DEVICE)
         {
-            paired.Remove(other.gameObject);
+            BluetoothDevice otherDevice = other.gameObject.GetComponent<BluetoothDevice>();
+            OnDisconnect(otherDevice);
         }
     }
 
-    public virtual void OnPinged(GameObject from) {
-        Log(from.name + " pinged me!");
+    public virtual void OnPinged(BluetoothDevice from) {
+        Log(from.DeviceGameObject.name + " pinged me!");
     }
 
-    public void Ping(GameObject target) {
+    public void Ping(BluetoothDevice target) {
         StartCoroutine(PingTask(target));
     }
 
-    private IEnumerator PingTask(GameObject target) {
-        Log("Pinging " + target.name + "...");
+    protected virtual void OnConnect(BluetoothDevice device)
+    {
+        paired.Add(device);
+    }
+
+    protected virtual void OnDisconnect(BluetoothDevice device)
+    {
+        paired.Remove(device);
+    }
+
+    private IEnumerator PingTask(BluetoothDevice target) {
+        Log("Pinging " + target.gameObject.name + "...");
         // Delay by taking into account the displacement between the two devices
-        yield return new WaitForSeconds(1f / SpeedOfLight * 1f);//Vector3.Displacement(target.transform.position - gameObject.transform.position));
-        target.GetComponent<BluetoothDevice>().OnPinged(gameObject);
+        float displacement = Vector3.Distance(target.transform.position, transform.position);
+        yield return new WaitForSeconds(1f / SpeedOfLight * displacement);
+        target.OnPinged(this);
     }
 
     public IEnumerator BlinkTask(Color colour, float delay = 1f)
@@ -117,7 +129,7 @@ public abstract class BluetoothDevice: MonoBehaviour
         }
     }
 
-    public BluetoothConnectionSet GetConnections(GameObject exclude = null)
+    public BluetoothConnectionSet GetConnections(BluetoothDevice exclude = null)
     {
         if (exclude == null)
         {
@@ -131,12 +143,17 @@ public abstract class BluetoothDevice: MonoBehaviour
         }
     }
 
-    private void Log(object message)
+    public GameObject DeviceGameObject
+    {
+        get { return gameObject; }
+    }
+
+    protected void Log(object message)
     {
         Debug.Log("[" + gameObject.name + "] " + message);
     }
 
-    public static GameObject GetSelectedDevice()
+    public static BluetoothDevice GetSelectedDevice()
     {
         return selectedDevice;
     }
@@ -149,43 +166,48 @@ public abstract class BluetoothDevice: MonoBehaviour
 
 public class BluetoothConnectionSet
 {
-    private HashSet<GameObject> set;
+    private HashSet<BluetoothDevice> set;
     private int maxConnections;
 
     public BluetoothConnectionSet(int maxConnections = 7)
     {
         this.maxConnections = maxConnections;
-        set = new HashSet<GameObject>();
+        set = new HashSet<BluetoothDevice>();
     }
 
-    public bool Add(GameObject gameObject)
+    public bool Add(BluetoothDevice device)
     {
         if(set.Count < maxConnections)
         {
-            var r = set.Add(gameObject);
+            var r = set.Add(device);
             return r;
         }
         return false;
     }
 
-    public bool Remove(GameObject gameObject)
+    public bool Remove(BluetoothDevice device)
     {
-        return set.Remove(gameObject);
+        return set.Remove(device);
     }
 
-    public IEnumerator<GameObject> GetEnumerator()
+    public IEnumerator<BluetoothDevice> GetEnumerator()
     {
         return set.GetEnumerator();
     }
 
-    public List<GameObject> AsList()
+    public List<BluetoothDevice> AsList()
     {
-        List<GameObject> list = new List<GameObject>();
-        foreach (GameObject g in set)
+        List<BluetoothDevice> list = new List<BluetoothDevice>();
+        foreach (BluetoothDevice d in set)
         {
-            list.Add(g);
+            list.Add(d);
         }
         return list;
+    }
+
+    public List<GameObject> DeviceGameObjects
+    {
+        get { return set.Select(o => o.DeviceGameObject).ToList();  }
     }
 
     public int Count
