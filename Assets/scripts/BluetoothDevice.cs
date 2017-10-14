@@ -9,18 +9,20 @@ public abstract class BluetoothDevice: MonoBehaviour
     public static readonly int MAX_CONNECTIONS = 7; // Set max connections to 7, as is the case with Bluetooth 5.0 mesh specification
 
     public float ConnectionRange = 5.0f;
-    public float SpeedOfLight = 500f; // This affects how quickly devices communicate
 
     private SphereCollider connectionCollider;
 
     private BluetoothConnectionSet paired;
     private static BluetoothDevice selectedDevice = null;
     private static readonly string BLUETOOTH_DEVICE = "BluetoothDevice";
+    private static readonly float SPEED_OF_LIGHT = 5f; // This affects how quickly devices communicate
 
     private LineRenderer line;
+    protected Color baseColour;
 
     public virtual void Start()
     {
+        baseColour = Colour;
         line = gameObject.AddComponent<LineRenderer>();
         line.startWidth = line.endWidth = .1f;
         line.positionCount = 0;
@@ -31,6 +33,8 @@ public abstract class BluetoothDevice: MonoBehaviour
         connectionCollider.center = Vector3.zero;
         connectionCollider.radius = ConnectionRange;
         connectionCollider.isTrigger = true;
+
+        //StartCoroutine(PingTask());
     }
 
     public virtual void Update()
@@ -61,16 +65,9 @@ public abstract class BluetoothDevice: MonoBehaviour
         selectedDevice = device;
     }
 
-    private void OnMouseDown()
+    protected virtual void OnMouseDown()
     {
         SelectDevice(this);
-        if (paired.Count > 0)
-        {
-            foreach (BluetoothDevice d in paired)
-            {
-                Ping(d);
-            }
-        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -91,12 +88,32 @@ public abstract class BluetoothDevice: MonoBehaviour
         }
     }
 
-    public virtual void OnPinged(BluetoothDevice from) {
-        Log(from.DeviceGameObject.name + " pinged me!");
+    public void Ping(PingPacket packet, bool backtrack = false)
+    {
+        if(backtrack)
+        {
+            StartCoroutine(PingTask(packet.Sender, DateTime.Now.Millisecond, packet, backtrack));
+        }
+        else
+        {
+            // Ping every device that doesn't appear in this packet's stack
+            foreach (BluetoothDevice d in paired)
+            {
+                if (d.GetType() == typeof(MasterBehaviour) || !packet.Trace.Select(o => o.Sender).Contains(d))
+                {
+                    StartCoroutine(PingTask(d, DateTime.Now.Millisecond, packet));
+                }
+                else
+                {
+                    Log(d.name + " is already in this ping trace!");
+                }
+            }
+        }
     }
 
-    public void Ping(BluetoothDevice target) {
-        StartCoroutine(PingTask(target));
+    protected virtual void OnPinged(PingPacket packet, bool backtrack = false) {
+        Log(packet.Sender.name + " pinged me!");
+        StartCoroutine(BlinkTask(Color.magenta, .2f, false));
     }
 
     protected virtual void OnConnect(BluetoothDevice device)
@@ -109,24 +126,26 @@ public abstract class BluetoothDevice: MonoBehaviour
         paired.Remove(device);
     }
 
-    private IEnumerator PingTask(BluetoothDevice target) {
-        Log("Pinging " + target.gameObject.name + "...");
+    private IEnumerator PingTask(BluetoothDevice target, int timeSentMillis, PingPacket packet, bool backtrack = false) {
+        Log("Pinging " + target.name + "...");
+
         // Delay by taking into account the displacement between the two devices
         float displacement = Vector3.Distance(target.transform.position, transform.position);
-        yield return new WaitForSeconds(1f / SpeedOfLight * displacement);
-        target.OnPinged(this);
+        yield return new WaitForSeconds(1f / SPEED_OF_LIGHT * displacement);
+
+        // Append a new PingEvent to the packet and forward it
+        target.OnPinged(new PingPacket(new PingEvent(this, timeSentMillis), packet), backtrack);
     }
 
-    public IEnumerator BlinkTask(Color colour, float delay = 1f)
+    public IEnumerator BlinkTask(Color colour, float delay = 0.5f, bool loop = true)
     {
-        while(true)
+        do
         {
-            Color startColour = gameObject.GetComponent<Renderer>().material.color;
+            Colour = colour;
             yield return new WaitForSeconds(delay);
-            gameObject.GetComponent<Renderer>().material.color = colour;
+            Colour = baseColour;
             yield return new WaitForSeconds(delay);
-            gameObject.GetComponent<Renderer>().material.color = startColour;
-        }
+        } while (loop);
     }
 
     public BluetoothConnectionSet GetConnections(BluetoothDevice exclude = null)
@@ -150,7 +169,7 @@ public abstract class BluetoothDevice: MonoBehaviour
 
     protected void Log(object message)
     {
-        Debug.Log("[" + gameObject.name + "] " + message);
+        Debug.Log("[" + name + "] " + message);
     }
 
     public static BluetoothDevice GetSelectedDevice()
@@ -161,6 +180,67 @@ public abstract class BluetoothDevice: MonoBehaviour
     public LineRenderer GetLineRenderer()
     {
         return line;
+    }
+
+    public Color Colour
+    {
+        get { return gameObject.GetComponent<Renderer>().material.color; }
+        set { gameObject.GetComponent<Renderer>().material.color = value; }
+    }
+}
+
+public class PingPacket
+{
+    public Queue<PingEvent> Trace { get; private set; }
+    public BluetoothDevice Sender { get { return Trace.Peek().Sender; } }
+
+    public PingPacket(PingEvent pingEvent, PingPacket history = null)
+    {
+        // If the sender of this ping packet was the ping initiator, create an empty history queue
+        if (history == null)
+        {
+            // Initialise a trace
+            Trace = new Queue<PingEvent>();
+        }
+        else
+        {
+            // Copy the sender's trace
+            Trace = history.Trace;
+        }
+
+        // Enqueue new event to the trace
+        Trace.Enqueue(pingEvent);
+    }
+
+    public override string ToString()
+    {
+        string s = "PingPacket {\n";
+        List<PingEvent> list = Trace.ToList();
+        for (int i = 0; i < Trace.Count; i++)
+        {
+            s += list[i].ToString();
+            if (i + 1 < Trace.Count)
+                s += "\n";
+        }
+        s += "\n}";
+        return s;
+    }
+}
+
+public class PingEvent
+{
+    public BluetoothDevice Sender { get; private set; }
+    public int TimeSentMillis { get; private set; }
+
+    public PingEvent(BluetoothDevice sender, int timeSendMillis)
+    {
+        Sender = sender;
+        TimeSentMillis = timeSendMillis;
+    }
+
+    public override string ToString()
+    {
+        return "PingEvent { Sender: " + Sender.name + "; Sent: " + TimeSentMillis + " }";
     }
 }
 

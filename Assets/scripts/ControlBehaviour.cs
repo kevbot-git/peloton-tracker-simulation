@@ -80,7 +80,7 @@ public class ControlBehaviour : MonoBehaviour
         BluetoothDevice selected = BluetoothDevice.GetSelectedDevice();
 
         if (selected)
-            title = selected.DeviceGameObject.name;
+            title = selected.name;
 
         GUILayout.BeginArea(new Rect(GUI_MARGIN, GUI_MARGIN, Screen.width / 3, Screen.height), title);
 
@@ -90,11 +90,11 @@ public class ControlBehaviour : MonoBehaviour
             // Create blank label to correct strange spacing
             GUILayout.Label("");
 
-            BluetoothConnectionSet selectedConnections = BluetoothDevice.GetSelectedDevice().GetConnections();
+            BluetoothConnectionSet selectedConnections = selected.GetConnections();
 
             foreach (BluetoothDevice connected in selectedConnections)
             {
-                GUILayout.Label(connected.DeviceGameObject.name);
+                GUILayout.Label(connected.name);
             }
         }
 
